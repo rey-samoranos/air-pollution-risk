@@ -30,34 +30,38 @@
         <div class="alert" id="apiAlert"></div>
 
         <div class="main-content">
-            <!-- Left Column: Location Selection and Data Display -->
-            <div class="card">
-                <h2 class="card-title"><i class="fas fa-map-marker-alt"></i> Select Location & View Data</h2>
-                
-                <div class="location-selector">
-                    <label for="location">Select Metro Manila City:</label>
-                    <select id="location" onchange="loadLocationData()">
-                        <option value="">-- Choose a location --</option>
-                        <option value="quezon_city">Quezon City</option>
-                        <option value="manila">Manila</option>
-                        <option value="makati">Makati</option>
-                        <option value="pasig">Pasig</option>
-                        <option value="taguig">Taguig</option>
-                        <option value="paranaque">Parañaque</option>
-                        <option value="las_pinas">Las Piñas</option>
-                        <option value="muntinlupa">Muntinlupa</option>
-                        <option value="marikina">Marikina</option>
-                        <option value="mandaluyong">Mandaluyong</option>
-                        <option value="san_juan">San Juan</option>
-                        <option value="caloocan">Caloocan</option>
-                        <option value="malabon">Malabon</option>
-                        <option value="navotas">Navotas</option>
-                        <option value="valenzuela">Valenzuela</option>
-                        <option value="pasay">Pasay</option>
-                        <option value="pateros">Pateros</option>
-                    </select>
-                </div>
+           
+                <!-- Change this section in results container -->
+<div class="risk-level-display" id="riskDisplay">
+    <h3 class="risk-title" id="riskTitle">
+        <i class="fas fa-exclamation-triangle"></i> <span id="riskLevelText">Select a location</span>
+    </h3>
+    <p class="risk-confidence">Model Confidence: <span id="confidenceValue">--</span></p>
+    <div class="aqi-display">
+        Estimated AQI: <span id="aqiValue">--</span> | <span id="aqiCategory">--</span>
+    </div>
+</div>
 
+<!-- Change probabilities section -->
+<div class="probabilities">
+    <div class="probability-item prob-low">
+        <div class="prob-label">Low Risk</div>
+        <div class="prob-value" id="probLow">--</div>
+    </div>
+    <div class="probability-item prob-moderate">
+        <div class="prob-label">Moderate Risk</div>
+        <div class="prob-value" id="probModerate">--</div>
+    </div>
+    <div class="probability-item prob-high">
+        <div class="prob-label">High Risk</div>
+        <div class="prob-value" id="probHigh">--</div>
+    </div>
+</div>
+
+<!-- Change recommendations to show nothing initially -->
+<ul id="generalRecs">
+    <!-- Will be populated by JavaScript -->
+</ul>
                 <div id="dataLoading" class="spinner" style="display: none;">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>Loading actual air quality data...</p>
@@ -808,4 +812,5 @@ footer {
 }</style>
 </body>
 </html>
+
 
