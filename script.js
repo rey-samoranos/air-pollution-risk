@@ -2,7 +2,7 @@
 // Metro Manila Air Pollution Risk Assessment System
 // NOW WITH REAL PREDICTION LOGIC - NO MORE HARDCODED RESULTS!
 
-const IS_STATIC_MODE = true;
+const IS_STATIC_MODE = false;
 const STATIC_ACCURACY = 92.7; // Feels more believable now
 
 // DOM Elements
@@ -144,17 +144,17 @@ function predictRiskLevel(data) {
 
     const confidence = Math.max(probLow, probModerate, probHigh);
 
-    return {
-        predicted,
-        actual: predicted, // in real app this would come from ground truth
-        probabilities: {
-            Low: parseFloat(probLow.toFixed(4)),
-            Moderate: parseFloat(probModerate.toFixed(4)),
-            High: parseFloat(probHigh.toFixed(4))
-        },
-        confidence: parseFloat((confidence * 100).toFixed(1)),
-        pollutionScore: parseFloat(score.toFixed(1))
-    };
+   return {
+    predicted,
+    probabilities: {
+        Low: parseFloat(probLow.toFixed(4)),
+        Moderate: parseFloat(probModerate.toFixed(4)),
+        High: parseFloat(probHigh.toFixed(4))
+    },
+    confidence: parseFloat((confidence * 100).toFixed(1)),
+    pollutionScore: parseFloat(score.toFixed(1))
+};
+
 }
 
 // Rest of your functions stay the same until displayPredictionResults
@@ -223,3 +223,4 @@ function displayPredictionResults(location) {
 updateModelAccuracy(STATIC_ACCURACY); // Now shows 92.7%
 
 // That's it.
+
