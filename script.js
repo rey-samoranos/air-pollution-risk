@@ -1,4 +1,4 @@
-// script.js - Complete working version
+// script.js - Complete working version WITH AUTOMATIC PREDICTIONS
 // Metro Manila Air Pollution Risk Assessment System
 
 // ============================================
@@ -182,7 +182,6 @@ const locationData = {
         predicted: 'Moderate',
         probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
-    // Additional cities with generated data
     'san_juan': {
         name: 'San Juan',
         data: {
@@ -298,7 +297,7 @@ const locationData = {
 };
 
 // ============================================
-// LOAD LOCATION DATA
+// LOAD LOCATION DATA AND GENERATE PREDICTION
 // ============================================
 function loadLocationData() {
     const locationId = locationSelect.value;
@@ -330,6 +329,9 @@ function loadLocationData() {
         // Update data display
         updateDataDisplay(location);
         predictBtn.disabled = false;
+        
+        // AUTOMATICALLY GENERATE PREDICTION WHEN LOCATION IS SELECTED
+        generatePredictionForLocation(location);
         
         showAlert(`✅ Loaded air quality data for ${location.name}`, 'success');
     }, 500);
@@ -379,8 +381,26 @@ function updateStatusIndicators(data) {
 }
 
 // ============================================
-// GENERATE PREDICTION
+// GENERATE PREDICTION (AUTOMATIC VERSION)
 // ============================================
+function generatePredictionForLocation(location) {
+    // Show loading briefly
+    dataLoading.style.display = 'block';
+    
+    // Simulate prediction delay
+    setTimeout(() => {
+        dataLoading.style.display = 'none';
+        
+        // Display the prediction
+        displayPredictionResults(location);
+        
+        // Update charts
+        updateCharts(location.data, location.name);
+        
+        // Don't show alert for automatic predictions
+    }, 300);
+}
+
 function generatePrediction() {
     const locationId = locationSelect.value;
     if (!locationId) {
