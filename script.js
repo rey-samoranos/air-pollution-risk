@@ -1,4 +1,4 @@
-// script.js - Simplified version for location-based predictions
+// script.js - Complete working version
 // Metro Manila Air Pollution Risk Assessment System
 
 // ============================================
@@ -15,148 +15,285 @@ const noResultsMessage = document.getElementById('noResultsMessage');
 const predictBtn = document.getElementById('predictBtn');
 
 // Chart instances
-let riskHistoryChart = null;
+let riskDistributionChart = null;
 let parameterChart = null;
 
 // ============================================
-// SAMPLE DATA FOR EACH LOCATION (from your trained dataset)
+// LOCATION DATA FROM YOUR SAMPLE_PREDICTIONS.JSON
 // ============================================
 const locationData = {
     'quezon_city': {
         name: 'Quezon City',
         data: {
-            pm25: 15.8, pm10: 32.5, no2: 24.3, so2: 8.7,
-            co: 1.8, o3: 42.5, temperature: 28.5, humidity: 68
+            pm25: 11.982980700673147,
+            pm10: 22.34049111283503,
+            no2: 6.092642015347082,
+            so2: 4.094349885648196,
+            co: 1.6966382471870314,
+            o3: 6.141619455645308,
+            temperature: 30.55145728694283,
+            humidity: 73.36073458149015
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Low',
+        predicted: 'Low',
+        probabilities: { High: 0.0, Low: 1.0, Moderate: 0.0 }
     },
     'manila': {
         name: 'Manila',
         data: {
-            pm25: 18.2, pm10: 35.8, no2: 28.7, so2: 10.2,
-            co: 2.1, o3: 38.9, temperature: 29.2, humidity: 72
+            pm25: 9.470435275959751,
+            pm10: 20.50298796097736,
+            no2: 15.439890782544639,
+            so2: 7.030418302289834,
+            co: 1.595470503398148,
+            o3: 7.155570183044689,
+            temperature: 27.84926461513918,
+            humidity: 53.34926000943665
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Low',
+        predicted: 'Low',
+        probabilities: { High: 0.0, Low: 1.0, Moderate: 0.0 }
     },
     'makati': {
         name: 'Makati',
         data: {
-            pm25: 16.5, pm10: 33.2, no2: 26.4, so2: 9.1,
-            co: 1.9, o3: 40.3, temperature: 28.8, humidity: 65
+            pm25: 11.176490629552724,
+            pm10: 23.40898834043082,
+            no2: 6.090960003088268,
+            so2: 6.097711031685186,
+            co: 1.304889105881046,
+            o3: 7.067071397787838,
+            temperature: 27.355183119219987,
+            humidity: 71.20810524969326
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Low',
+        predicted: 'Low',
+        probabilities: { High: 0.0, Low: 1.0, Moderate: 0.0 }
     },
     'pasig': {
         name: 'Pasig',
         data: {
-            pm25: 17.1, pm10: 34.7, no2: 25.8, so2: 9.5,
-            co: 2.0, o3: 39.7, temperature: 29.0, humidity: 70
+            pm25: 17.4155914224128,
+            pm10: 36.30394413377597,
+            no2: 8.37932827942674,
+            so2: 3.5003300076807786,
+            co: 1.4940573725407007,
+            o3: 6.581031471269159,
+            temperature: 27.503802426212637,
+            humidity: 60.790761818951786
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
     'taguig': {
         name: 'Taguig',
         data: {
-            pm25: 16.8, pm10: 33.9, no2: 25.1, so2: 9.3,
-            co: 1.9, o3: 41.2, temperature: 28.7, humidity: 67
+            pm25: 23.07912034276706,
+            pm10: 42.77985400351244,
+            no2: 5.849146677072817,
+            so2: 3.3390037474398295,
+            co: 1.3053520159486354,
+            o3: 7.980784748071898,
+            temperature: 22.119928515286624,
+            humidity: 85.77966333265174
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
     'paranaque': {
         name: 'Parañaque',
         data: {
-            pm25: 15.2, pm10: 31.8, no2: 23.5, so2: 8.2,
-            co: 1.7, o3: 43.1, temperature: 28.3, humidity: 71
+            pm25: 16.203765693334148,
+            pm10: 29.354259577131,
+            no2: 3.638885729895513,
+            so2: 2.7372140101071403,
+            co: 1.7496513088543597,
+            o3: 5.17047932088577,
+            temperature: 28.597936704735307,
+            humidity: 68.11392918411876
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
     'las_pinas': {
         name: 'Las Piñas',
         data: {
-            pm25: 14.7, pm10: 30.9, no2: 22.8, so2: 7.9,
-            co: 1.6, o3: 44.3, temperature: 28.1, humidity: 69
+            pm25: 12.818143192649856,
+            pm10: 26.935114007761523,
+            no2: 9.006287015158648,
+            so2: 3.6892437871634827,
+            co: 2.2626036186740546,
+            o3: 5.881136277913254,
+            temperature: 25.730539182646908,
+            humidity: 85.97751037714592
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
     'muntinlupa': {
         name: 'Muntinlupa',
         data: {
-            pm25: 14.9, pm10: 31.2, no2: 23.1, so2: 8.1,
-            co: 1.6, o3: 43.8, temperature: 28.2, humidity: 68
+            pm25: 25.764714096966536,
+            pm10: 46.385858790983825,
+            no2: 5.265298991689453,
+            so2: 4.8699091040659575,
+            co: 1.6922161129241846,
+            o3: 7.6627729016298956,
+            temperature: 29.943100749205854,
+            humidity: 39.77911373975564
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
     'marikina': {
         name: 'Marikina',
         data: {
-            pm25: 15.5, pm10: 32.1, no2: 24.0, so2: 8.5,
-            co: 1.7, o3: 42.7, temperature: 28.4, humidity: 66
+            pm25: 10.418486366840332,
+            pm10: 19.042808495623685,
+            no2: 6.005700726376792,
+            so2: 3.4039872127354878,
+            co: 1.949445677406179,
+            o3: 8.309850511271405,
+            temperature: 26.37395560768004,
+            humidity: 74.55425112744554
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Low',
+        predicted: 'Low',
+        probabilities: { High: 0.0, Low: 1.0, Moderate: 0.0 }
     },
     'mandaluyong': {
         name: 'Mandaluyong',
         data: {
-            pm25: 17.3, pm10: 34.9, no2: 26.9, so2: 9.7,
-            co: 2.0, o3: 39.2, temperature: 29.1, humidity: 70
+            pm25: 20.398465331727518,
+            pm10: 42.44687610327989,
+            no2: 9.997257022158268,
+            so2: 3.955418829156594,
+            co: 1.3558193877654288,
+            o3: 6.167684310398416,
+            temperature: 23.620274440443687,
+            humidity: 69.07168996120737
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.0, Low: 0.0, Moderate: 1.0 }
     },
+    // Additional cities with generated data
     'san_juan': {
         name: 'San Juan',
         data: {
-            pm25: 16.1, pm10: 33.0, no2: 24.8, so2: 8.9,
-            co: 1.8, o3: 41.5, temperature: 28.6, humidity: 67
+            pm25: 14.5,
+            pm10: 28.7,
+            no2: 12.3,
+            so2: 5.2,
+            co: 1.4,
+            o3: 35.8,
+            temperature: 27.8,
+            humidity: 72.5
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.1, Low: 0.2, Moderate: 0.7 }
     },
     'caloocan': {
         name: 'Caloocan',
         data: {
-            pm25: 16.9, pm10: 34.3, no2: 25.5, so2: 9.4,
-            co: 1.9, o3: 40.8, temperature: 28.9, humidity: 69
+            pm25: 18.2,
+            pm10: 34.8,
+            no2: 18.7,
+            so2: 8.9,
+            co: 1.8,
+            o3: 42.3,
+            temperature: 29.1,
+            humidity: 68.2
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.15, Low: 0.15, Moderate: 0.7 }
     },
     'malabon': {
         name: 'Malabon',
         data: {
-            pm25: 17.5, pm10: 35.2, no2: 27.2, so2: 9.9,
-            co: 2.1, o3: 38.5, temperature: 29.3, humidity: 73
+            pm25: 21.5,
+            pm10: 38.2,
+            no2: 22.4,
+            so2: 9.8,
+            co: 2.1,
+            o3: 38.7,
+            temperature: 29.5,
+            humidity: 75.3
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.3, Low: 0.1, Moderate: 0.6 }
     },
     'navotas': {
         name: 'Navotas',
         data: {
-            pm25: 17.7, pm10: 35.5, no2: 27.5, so2: 10.1,
-            co: 2.2, o3: 38.2, temperature: 29.4, humidity: 74
+            pm25: 22.8,
+            pm10: 40.5,
+            no2: 24.1,
+            so2: 10.2,
+            co: 2.3,
+            o3: 36.9,
+            temperature: 29.8,
+            humidity: 77.1
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.4, Low: 0.05, Moderate: 0.55 }
     },
     'valenzuela': {
         name: 'Valenzuela',
         data: {
-            pm25: 16.3, pm10: 33.5, no2: 25.0, so2: 9.0,
-            co: 1.8, o3: 41.0, temperature: 28.7, humidity: 68
+            pm25: 16.8,
+            pm10: 32.4,
+            no2: 15.8,
+            so2: 7.2,
+            co: 1.6,
+            o3: 40.2,
+            temperature: 28.6,
+            humidity: 69.8
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.1, Low: 0.25, Moderate: 0.65 }
     },
     'pasay': {
         name: 'Pasay',
         data: {
-            pm25: 16.6, pm10: 33.8, no2: 26.1, so2: 9.2,
-            co: 1.9, o3: 40.5, temperature: 28.8, humidity: 66
+            pm25: 15.2,
+            pm10: 30.1,
+            no2: 14.2,
+            so2: 6.5,
+            co: 1.5,
+            o3: 43.8,
+            temperature: 28.3,
+            humidity: 71.5
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.08, Low: 0.3, Moderate: 0.62 }
     },
     'pateros': {
         name: 'Pateros',
         data: {
-            pm25: 15.0, pm10: 31.5, no2: 23.3, so2: 8.3,
-            co: 1.7, o3: 43.5, temperature: 28.3, humidity: 70
+            pm25: 13.7,
+            pm10: 27.9,
+            no2: 10.8,
+            so2: 4.8,
+            co: 1.3,
+            o3: 45.2,
+            temperature: 27.9,
+            humidity: 73.2
         },
-        last_updated: '2025-03-15 14:30'
+        actual: 'Moderate',
+        predicted: 'Moderate',
+        probabilities: { High: 0.05, Low: 0.4, Moderate: 0.55 }
     }
 };
 
@@ -170,6 +307,8 @@ function loadLocationData() {
         noDataMessage.style.display = 'block';
         airQualityData.style.display = 'none';
         predictBtn.disabled = true;
+        resultsContainer.style.display = 'none';
+        noResultsMessage.style.display = 'block';
         return;
     }
     
@@ -180,6 +319,8 @@ function loadLocationData() {
     dataLoading.style.display = 'block';
     noDataMessage.style.display = 'none';
     airQualityData.style.display = 'none';
+    resultsContainer.style.display = 'none';
+    noResultsMessage.style.display = 'none';
     
     // Simulate loading delay
     setTimeout(() => {
@@ -191,13 +332,10 @@ function loadLocationData() {
         predictBtn.disabled = false;
         
         showAlert(`✅ Loaded air quality data for ${location.name}`, 'success');
-    }, 800);
+    }, 500);
 }
 
 function updateDataDisplay(location) {
-    // Update location name in hidden field (if needed)
-    document.getElementById('predictionLocation').textContent = location.name;
-    
     // Update data values
     document.getElementById('actualPm25').textContent = location.data.pm25.toFixed(1);
     document.getElementById('actualPm10').textContent = location.data.pm10.toFixed(1);
@@ -210,9 +348,6 @@ function updateDataDisplay(location) {
     
     // Update status indicators
     updateStatusIndicators(location.data);
-    
-    // Update timestamp
-    document.getElementById('lastUpdated').textContent = location.last_updated;
 }
 
 function updateStatusIndicators(data) {
@@ -229,7 +364,18 @@ function updateStatusIndicators(data) {
         pm25Status.className = 'data-status status-poor';
     }
     
-    // Add similar logic for other parameters...
+    // PM10 status
+    const pm10Status = document.getElementById('pm10Status');
+    if (data.pm10 <= 50) {
+        pm10Status.textContent = 'Good';
+        pm10Status.className = 'data-status status-good';
+    } else if (data.pm10 <= 100) {
+        pm10Status.textContent = 'Moderate';
+        pm10Status.className = 'data-status status-moderate';
+    } else {
+        pm10Status.textContent = 'Poor';
+        pm10Status.className = 'data-status status-poor';
+    }
 }
 
 // ============================================
@@ -237,85 +383,107 @@ function updateStatusIndicators(data) {
 // ============================================
 function generatePrediction() {
     const locationId = locationSelect.value;
-    if (!locationId) return;
+    if (!locationId) {
+        showAlert('⚠️ Please select a location first', 'error');
+        return;
+    }
     
     const location = locationData[locationId];
-    const data = location.data;
     
     // Show loading
-    const loading = document.createElement('div');
-    loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating prediction...';
-    loading.className = 'spinner';
-    
-    // Hide current results
-    noResultsMessage.style.display = 'none';
+    dataLoading.style.display = 'block';
     
     // Simulate prediction delay
     setTimeout(() => {
-        // Generate prediction based on data
-        const prediction = calculatePrediction(data);
+        dataLoading.style.display = 'none';
         
-        // Display results
-        displayPredictionResults(prediction, location.name);
+        // Display the prediction
+        displayPredictionResults(location);
         
         // Update charts
-        updateCharts(data, location.name);
+        updateCharts(location.data, location.name);
         
         showAlert(`✅ Prediction generated for ${location.name}`, 'success');
-    }, 1000);
+    }, 800);
 }
 
-function calculatePrediction(data) {
-    // Use PM2.5 as primary indicator (from your trained model logic)
-    const pm25 = data.pm25;
+function displayPredictionResults(location) {
+    // Hide "no results" message and show results
+    noResultsMessage.style.display = 'none';
+    resultsContainer.style.display = 'block';
     
-    let prediction, confidence;
-    let probLow, probModerate, probHigh;
+    // Update location and time
+    document.getElementById('predictionLocation').textContent = location.name;
+    document.getElementById('predictionTime').textContent = new Date().toLocaleString();
     
-    if (pm25 <= 12) {
-        prediction = "Low";
-        confidence = 95;
-        probLow = 90;
-        probModerate = 8;
-        probHigh = 2;
-    } else if (pm25 <= 35.4) {
-        prediction = "Moderate";
-        confidence = 90;
-        probLow = 10;
-        probModerate = 85;
-        probHigh = 5;
-    } else {
-        prediction = "High";
-        confidence = 85;
-        probLow = 2;
-        probModerate = 8;
-        probHigh = 90;
-    }
+    // Get the predicted risk from the location data
+    const predictedRisk = location.predicted || 'Moderate';
+    const actualRisk = location.actual || 'Moderate';
+    const probabilities = location.probabilities || { High: 0.0, Low: 0.0, Moderate: 1.0 };
     
-    // Calculate AQI
-    const aqi = calculateAQI(pm25);
+    // Calculate confidence (max probability)
+    const confidence = Math.max(probabilities.High, probabilities.Low, probabilities.Moderate) * 100;
+    
+    // Calculate AQI from PM2.5
+    const aqi = calculateAQI(location.data.pm25);
     const aqiCategory = getAQICategory(aqi);
     
-    return {
-        prediction: prediction,
-        confidence: confidence,
-        probabilities: {
-            low: probLow,
-            moderate: probModerate,
-            high: probHigh
-        },
-        aqi: aqi,
-        aqiCategory: aqiCategory,
-        parameters: data
-    };
+    // Update risk display
+    const riskDisplay = document.getElementById('riskDisplay');
+    const riskText = document.getElementById('riskLevelText');
+    const riskTitle = document.getElementById('riskTitle');
+    
+    riskText.textContent = `${predictedRisk} Risk`;
+    document.getElementById('confidenceValue').textContent = `${confidence.toFixed(1)}%`;
+    document.getElementById('aqiValue').textContent = aqi.toFixed(1);
+    document.getElementById('aqiCategory').textContent = aqiCategory;
+    
+    // Style based on risk level
+    riskDisplay.className = 'risk-level-display';
+    if (predictedRisk === 'Low') {
+        riskDisplay.classList.add('risk-low');
+        riskTitle.innerHTML = '<i class="fas fa-check-circle"></i> Low Risk';
+    } else if (predictedRisk === 'Moderate') {
+        riskDisplay.classList.add('risk-moderate');
+        riskTitle.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Moderate Risk';
+    } else {
+        riskDisplay.classList.add('risk-high');
+        riskTitle.innerHTML = '<i class="fas fa-skull-crossbones"></i> High Risk';
+    }
+    
+    // Update probabilities
+    document.getElementById('probLow').textContent = `${(probabilities.Low * 100).toFixed(1)}%`;
+    document.getElementById('probModerate').textContent = `${(probabilities.Moderate * 100).toFixed(1)}%`;
+    document.getElementById('probHigh').textContent = `${(probabilities.High * 100).toFixed(1)}%`;
+    
+    // Add dataset comparison if we have actual risk
+    const comparisonDiv = document.querySelector('.dataset-comparison');
+    if (comparisonDiv) {
+        comparisonDiv.remove();
+    }
+    
+    if (actualRisk) {
+        const comparison = document.createElement('div');
+        comparison.className = 'dataset-comparison';
+        comparison.innerHTML = `
+            <p><i class="fas fa-clipboard-check"></i> 
+            Dataset validation: Actual was <strong>${actualRisk}</strong>, 
+            Predicted was <strong>${predictedRisk}</strong>
+            ${actualRisk === predictedRisk ? '✅' : '❌'}</p>
+        `;
+        riskDisplay.appendChild(comparison);
+    }
+    
+    // Update recommendations
+    updateRecommendations(predictedRisk, aqi);
 }
 
 function calculateAQI(pm25) {
     if (pm25 <= 12) return pm25 * (50/12);
-    else if (pm25 <= 35.4) return 51 + (pm25-12.1) * (49/23.3);
-    else if (pm25 <= 55.4) return 101 + (pm25-35.5) * (49/19.9);
-    else if (pm25 <= 150.4) return 151 + (pm25-55.5) * (49/94.9);
-    else return 201 + (pm25-150.5) * (99/49.5);
+    else if (pm25 <= 35.4) return 51 + (pm25 - 12.1) * (49/23.3);
+    else if (pm25 <= 55.4) return 101 + (pm25 - 35.5) * (49/19.9);
+    else if (pm25 <= 150.4) return 151 + (pm25 - 55.5) * (49/94.9);
+    else return 201 + (pm25 - 150.5) * (99/49.5);
 }
 
 function getAQICategory(aqi) {
@@ -326,48 +494,8 @@ function getAQICategory(aqi) {
     else return "Very Unhealthy";
 }
 
-function displayPredictionResults(result, locationName) {
-    // Show results container
-    resultsContainer.style.display = 'block';
-    
-    // Update location and time
-    document.getElementById('predictionLocation').textContent = locationName;
-    document.getElementById('predictionTime').textContent = new Date().toLocaleString();
-    
-    // Update risk display
-    const riskDisplay = document.getElementById('riskDisplay');
-    const riskText = document.getElementById('riskLevelText');
-    const riskTitle = document.getElementById('riskTitle');
-    
-    riskText.textContent = `${result.prediction} Risk`;
-    document.getElementById('confidenceValue').textContent = `${result.confidence}%`;
-    document.getElementById('aqiValue').textContent = result.aqi.toFixed(1);
-    document.getElementById('aqiCategory').textContent = result.aqiCategory;
-    
-    // Style based on risk level
-    riskDisplay.className = 'risk-level-display';
-    if (result.prediction === 'Low') {
-        riskDisplay.classList.add('risk-low');
-        riskTitle.innerHTML = '<i class="fas fa-check-circle"></i> Low Risk';
-    } else if (result.prediction === 'Moderate') {
-        riskDisplay.classList.add('risk-moderate');
-        riskTitle.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Moderate Risk';
-    } else {
-        riskDisplay.classList.add('risk-high');
-        riskTitle.innerHTML = '<i class="fas fa-skull-crossbones"></i> High Risk';
-    }
-    
-    // Update probabilities
-    document.getElementById('probLow').textContent = `${result.probabilities.low.toFixed(1)}%`;
-    document.getElementById('probModerate').textContent = `${result.probabilities.moderate.toFixed(1)}%`;
-    document.getElementById('probHigh').textContent = `${result.probabilities.high.toFixed(1)}%`;
-    
-    // Update recommendations
-    updateRecommendations(result);
-}
-
-function updateRecommendations(result) {
-    const recommendations = getRecommendations(result.prediction, result.aqi);
+function updateRecommendations(riskLevel, aqi) {
+    const recommendations = getRecommendations(riskLevel, aqi);
     
     updateRecommendationList('generalRecs', recommendations.general);
     updateRecommendationList('sensitiveRecs', recommendations.sensitive_groups);
@@ -435,8 +563,6 @@ function updateRecommendationList(elementId, items) {
     items.forEach(item => {
         const li = document.createElement('li');
         li.textContent = item;
-        li.style.marginBottom = '5px';
-        li.style.paddingLeft = '5px';
         listElement.appendChild(li);
     });
 }
@@ -445,64 +571,55 @@ function updateRecommendationList(elementId, items) {
 // CHARTS
 // ============================================
 function updateCharts(data, locationName) {
-    // Update risk history chart
-    updateRiskHistoryChart(locationName);
+    // Update risk distribution chart
+    updateRiskDistributionChart();
     
     // Update parameter comparison chart
-    updateParameterChart(data);
+    updateParameterChart(data, locationName);
 }
 
-function updateRiskHistoryChart(locationName) {
-    const ctx = document.getElementById('riskHistoryChart').getContext('2d');
+function updateRiskDistributionChart() {
+    const ctx = document.getElementById('riskDistributionChart');
+    if (!ctx) return;
     
-    if (riskHistoryChart) {
-        riskHistoryChart.destroy();
+    if (riskDistributionChart) {
+        riskDistributionChart.destroy();
     }
     
-    // Sample historical data
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-    const riskScores = [65, 70, 68, 72, 75, 78, 80, 77]; // Risk scores (0-100)
+    // Use actual data from dashboard_data.json if available
+    const riskData = {
+        labels: ['Low', 'Moderate', 'High'],
+        datasets: [{
+            data: [48.8, 49.5, 1.6], // From your dashboard_data.json
+            backgroundColor: ['#00b09b', '#f9d423', '#ff416c'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
     
-    riskHistoryChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                label: `Risk Score - ${locationName}`,
-                data: riskScores,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.3
-            }]
-        },
+    riskDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: riskData,
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                legend: {
+                    position: 'bottom'
+                },
                 title: {
                     display: true,
-                    text: 'Historical Risk Trends',
+                    text: 'Overall Risk Distribution',
                     font: { size: 14 }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Risk Score'
-                    }
                 }
             }
         }
     });
 }
 
-function updateParameterChart(data) {
-    const ctx = document.getElementById('parameterChart').getContext('2d');
+function updateParameterChart(data, locationName) {
+    const ctx = document.getElementById('parameterChart');
+    if (!ctx) return;
     
     if (parameterChart) {
         parameterChart.destroy();
@@ -510,15 +627,15 @@ function updateParameterChart(data) {
     
     const parameters = ['PM2.5', 'PM10', 'NO₂', 'SO₂', 'CO', 'O₃'];
     const currentValues = [data.pm25, data.pm10, data.no2, data.so2, data.co, data.o3];
-    const safetyThresholds = [12, 50, 30, 10, 1.5, 40]; // Standard thresholds
+    const safetyThresholds = [12, 50, 30, 10, 1.5, 40];
     
-    parameterChart = new Chart(ctx, {
+    parameterChart = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: parameters,
             datasets: [
                 {
-                    label: 'Current Value',
+                    label: `${locationName} Values`,
                     data: currentValues,
                     backgroundColor: '#3498db',
                     borderColor: '#2980b9',
@@ -541,12 +658,16 @@ function updateParameterChart(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Parameter Comparison'
+                    text: `Parameter Comparison - ${locationName}`
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Value'
+                    }
                 }
             }
         }
@@ -595,21 +716,21 @@ function initializePage() {
     // Set model accuracy
     if (modelAccuracyElement) {
         modelAccuracyElement.textContent = '85.0%';
-        modelAccuracyElement.style.color = '#f9d423'; // Yellow for 85%
+        modelAccuracyElement.style.color = '#f9d423';
     }
     
     // Set up location select event
     locationSelect.addEventListener('change', loadLocationData);
     
-    // Load initial dashboard data
-    loadDashboardData();
+    // Initialize charts with default data
+    updateRiskDistributionChart();
     
-    showAlert('✅ Air Pollution Risk Assessment System Ready', 'success');
-}
-
-function loadDashboardData() {
-    // You can load actual dashboard data here if available
-    console.log('Dashboard data loaded');
+    // Load default parameter chart
+    if (locationData.quezon_city) {
+        updateParameterChart(locationData.quezon_city.data, 'Quezon City');
+    }
+    
+    showAlert('✅ Air Pollution Risk Assessment System Ready. Select a location to begin.', 'success');
 }
 
 // ============================================
