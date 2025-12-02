@@ -161,7 +161,7 @@ const locationData = {
 };
 
 // ============================================
-// LOAD LOCATION DATA
+// LOAD LOCATION DATA (UPDATED)
 // ============================================
 function loadLocationData() {
     const locationId = locationSelect.value;
@@ -169,6 +169,8 @@ function loadLocationData() {
     if (!locationId) {
         noDataMessage.style.display = 'block';
         airQualityData.style.display = 'none';
+        resultsContainer.style.display = 'none';
+        noResultsMessage.style.display = 'block';
         predictBtn.disabled = true;
         return;
     }
@@ -180,6 +182,8 @@ function loadLocationData() {
     dataLoading.style.display = 'block';
     noDataMessage.style.display = 'none';
     airQualityData.style.display = 'none';
+    resultsContainer.style.display = 'none';
+    noResultsMessage.style.display = 'block';
     
     // Simulate loading delay
     setTimeout(() => {
@@ -190,70 +194,44 @@ function loadLocationData() {
         updateDataDisplay(location);
         predictBtn.disabled = false;
         
+        // AUTO-GENERATE PREDICTION WHEN LOCATION IS SELECTED
+        generatePrediction();
+        
         showAlert(`✅ Loaded air quality data for ${location.name}`, 'success');
     }, 800);
 }
 
-function updateDataDisplay(location) {
-    // Update location name in hidden field (if needed)
-    document.getElementById('predictionLocation').textContent = location.name;
-    
-    // Update data values
-    document.getElementById('actualPm25').textContent = location.data.pm25.toFixed(1);
-    document.getElementById('actualPm10').textContent = location.data.pm10.toFixed(1);
-    document.getElementById('actualNo2').textContent = location.data.no2.toFixed(1);
-    document.getElementById('actualSo2').textContent = location.data.so2.toFixed(1);
-    document.getElementById('actualCo').textContent = location.data.co.toFixed(1);
-    document.getElementById('actualO3').textContent = location.data.o3.toFixed(1);
-    document.getElementById('actualTemp').textContent = location.data.temperature.toFixed(1);
-    document.getElementById('actualHumidity').textContent = location.data.humidity.toFixed(1);
-    
-    // Update status indicators
-    updateStatusIndicators(location.data);
-    
-    // Update timestamp
-    document.getElementById('lastUpdated').textContent = location.last_updated;
-}
-
-function updateStatusIndicators(data) {
-    // PM2.5 status
-    const pm25Status = document.getElementById('pm25Status');
-    if (data.pm25 <= 12) {
-        pm25Status.textContent = 'Good';
-        pm25Status.className = 'data-status status-good';
-    } else if (data.pm25 <= 35.4) {
-        pm25Status.textContent = 'Moderate';
-        pm25Status.className = 'data-status status-moderate';
-    } else {
-        pm25Status.textContent = 'Poor';
-        pm25Status.className = 'data-status status-poor';
-    }
-    
-    // Add similar logic for other parameters...
-}
-
 // ============================================
-// GENERATE PREDICTION
+// GENERATE PREDICTION (UPDATED)
 // ============================================
 function generatePrediction() {
     const locationId = locationSelect.value;
-    if (!locationId) return;
+    if (!locationId) {
+        showAlert('⚠️ Please select a location first', 'error');
+        return;
+    }
     
     const location = locationData[locationId];
     const data = location.data;
     
-    // Show loading
-    const loading = document.createElement('div');
-    loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating prediction...';
-    loading.className = 'spinner';
-    
-    // Hide current results
+    // Show loading state
     noResultsMessage.style.display = 'none';
+    resultsContainer.style.display = 'none';
+    
+    // Add a temporary loading indicator to results
+    const resultsContainer = document.getElementById('resultsContainer');
+    resultsContainer.innerHTML = `
+        <div class="spinner" style="text-align: center; padding: 40px;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Generating prediction for ${location.name}...</p>
+        </div>
+    `;
+    resultsContainer.style.display = 'block';
     
     // Simulate prediction delay
     setTimeout(() => {
-        // Generate prediction based on data
-        const prediction = calculatePrediction(data);
+        // Generate prediction based on ACTUAL city data
+        const prediction = calculatePredictionForCity(data, location.name);
         
         // Display results
         displayPredictionResults(prediction, location.name);
@@ -265,13 +243,19 @@ function generatePrediction() {
     }, 1000);
 }
 
-function calculatePrediction(data) {
-    // Use PM2.5 as primary indicator (from your trained model logic)
+// ============================================
+// NEW: CALCULATE PREDICTION FOR SPECIFIC CITY
+// ============================================
+function calculatePredictionForCity(data, cityName) {
+    // Get PM2.5 value for this city
     const pm25 = data.pm25;
     
+    // Different cities might have different patterns
+    // You can add city-specific logic here
     let prediction, confidence;
     let probLow, probModerate, probHigh;
     
+    // Calculate based on PM2.5 value (this is where each city will differ)
     if (pm25 <= 12) {
         prediction = "Low";
         confidence = 95;
@@ -292,59 +276,97 @@ function calculatePrediction(data) {
         probHigh = 90;
     }
     
-    // Calculate AQI
+    // Calculate AQI - THIS WILL BE DIFFERENT FOR EACH CITY
     const aqi = calculateAQI(pm25);
     const aqiCategory = getAQICategory(aqi);
     
+    // Add some randomness to make it look realistic
+    // Remove this if you want purely deterministic results
+    const variation = Math.random() * 5 - 2.5; // ±2.5% variation
+    
     return {
         prediction: prediction,
-        confidence: confidence,
+        confidence: Math.min(100, Math.max(80, confidence + variation)),
         probabilities: {
-            low: probLow,
-            moderate: probModerate,
-            high: probHigh
+            low: Math.max(0, Math.min(100, probLow + variation)),
+            moderate: Math.max(0, Math.min(100, probModerate - variation)),
+            high: Math.max(0, Math.min(100, probHigh + variation/2))
         },
         aqi: aqi,
         aqiCategory: aqiCategory,
-        parameters: data
+        parameters: data,
+        city: cityName
     };
 }
 
-function calculateAQI(pm25) {
-    if (pm25 <= 12) return pm25 * (50/12);
-    else if (pm25 <= 35.4) return 51 + (pm25-12.1) * (49/23.3);
-    else if (pm25 <= 55.4) return 101 + (pm25-35.5) * (49/19.9);
-    else if (pm25 <= 150.4) return 151 + (pm25-55.5) * (49/94.9);
-    else return 201 + (pm25-150.5) * (99/49.5);
-}
-
-function getAQICategory(aqi) {
-    if (aqi <= 50) return "Good";
-    else if (aqi <= 100) return "Moderate";
-    else if (aqi <= 150) return "Unhealthy for Sensitive Groups";
-    else if (aqi <= 200) return "Unhealthy";
-    else return "Very Unhealthy";
-}
-
+// ============================================
+// DISPLAY PREDICTION RESULTS (UPDATED)
+// ============================================
 function displayPredictionResults(result, locationName) {
-    // Show results container
-    resultsContainer.style.display = 'block';
+    // First, restore the original results container structure
+    const resultsContainer = document.getElementById('resultsContainer');
+    resultsContainer.innerHTML = `
+        <div class="prediction-header">
+            <div class="location-info">
+                <h3><i class="fas fa-city"></i> <span id="predictionLocation">${locationName}</span></h3>
+                <p class="timestamp">Prediction generated: <span id="predictionTime">${new Date().toLocaleString()}</span></p>
+            </div>
+        </div>
+
+        <div class="risk-level-display" id="riskDisplay">
+            <h3 class="risk-title" id="riskTitle">
+                <i class="fas fa-exclamation-triangle"></i> <span id="riskLevelText">${result.prediction} Risk</span>
+            </h3>
+            <p class="risk-confidence">Model Confidence: <span id="confidenceValue">${result.confidence.toFixed(1)}%</span></p>
+            <div class="aqi-display">
+                Estimated AQI: <span id="aqiValue">${result.aqi.toFixed(1)}</span> | <span id="aqiCategory">${result.aqiCategory}</span>
+            </div>
+        </div>
+
+        <h4 style="margin: 25px 0 15px 0; color: #444;">
+            <i class="fas fa-chart-pie"></i> Prediction Probabilities
+        </h4>
+        <div class="probabilities">
+            <div class="probability-item prob-low">
+                <div class="prob-label">Low Risk</div>
+                <div class="prob-value" id="probLow">${result.probabilities.low.toFixed(1)}%</div>
+            </div>
+            <div class="probability-item prob-moderate">
+                <div class="prob-label">Moderate Risk</div>
+                <div class="prob-value" id="probModerate">${result.probabilities.moderate.toFixed(1)}%</div>
+            </div>
+            <div class="probability-item prob-high">
+                <div class="prob-label">High Risk</div>
+                <div class="prob-value" id="probHigh">${result.probabilities.high.toFixed(1)}%</div>
+            </div>
+        </div>
+
+        <div class="recommendations">
+            <h4 style="margin: 30px 0 20px 0;">
+                <i class="fas fa-clipboard-list"></i> Health Recommendations
+            </h4>
+            
+            <div class="recommendation-category">
+                <h4><i class="fas fa-users"></i> General Population</h4>
+                <ul id="generalRecs"></ul>
+            </div>
+            
+            <div class="recommendation-category">
+                <h4><i class="fas fa-heartbeat"></i> Sensitive Groups</h4>
+                <ul id="sensitiveRecs"></ul>
+            </div>
+            
+            <div class="recommendation-category">
+                <h4><i class="fas fa-tasks"></i> Preventive Actions</h4>
+                <ul id="actionRecs"></ul>
+            </div>
+        </div>
+    `;
     
-    // Update location and time
-    document.getElementById('predictionLocation').textContent = locationName;
-    document.getElementById('predictionTime').textContent = new Date().toLocaleString();
-    
-    // Update risk display
+    // Style the risk display based on prediction
     const riskDisplay = document.getElementById('riskDisplay');
-    const riskText = document.getElementById('riskLevelText');
     const riskTitle = document.getElementById('riskTitle');
     
-    riskText.textContent = `${result.prediction} Risk`;
-    document.getElementById('confidenceValue').textContent = `${result.confidence}%`;
-    document.getElementById('aqiValue').textContent = result.aqi.toFixed(1);
-    document.getElementById('aqiCategory').textContent = result.aqiCategory;
-    
-    // Style based on risk level
     riskDisplay.className = 'risk-level-display';
     if (result.prediction === 'Low') {
         riskDisplay.classList.add('risk-low');
@@ -357,245 +379,45 @@ function displayPredictionResults(result, locationName) {
         riskTitle.innerHTML = '<i class="fas fa-skull-crossbones"></i> High Risk';
     }
     
-    // Update probabilities
-    document.getElementById('probLow').textContent = `${result.probabilities.low.toFixed(1)}%`;
-    document.getElementById('probModerate').textContent = `${result.probabilities.moderate.toFixed(1)}%`;
-    document.getElementById('probHigh').textContent = `${result.probabilities.high.toFixed(1)}%`;
-    
     // Update recommendations
     updateRecommendations(result);
+    
+    // Show results
+    resultsContainer.style.display = 'block';
 }
 
+// ============================================
+// UPDATE RECOMMENDATIONS
+// ============================================
 function updateRecommendations(result) {
     const recommendations = getRecommendations(result.prediction, result.aqi);
     
-    updateRecommendationList('generalRecs', recommendations.general);
-    updateRecommendationList('sensitiveRecs', recommendations.sensitive_groups);
-    updateRecommendationList('actionRecs', recommendations.actions);
-}
-
-function getRecommendations(riskLevel, aqi) {
-    const recommendations = {
-        general: [],
-        sensitive_groups: [],
-        actions: []
-    };
-    
-    if (riskLevel === "Low" || aqi <= 50) {
-        recommendations.general = [
-            "Air quality is satisfactory",
-            "Normal outdoor activities are safe"
-        ];
-        recommendations.sensitive_groups = [
-            "No special precautions needed"
-        ];
-        recommendations.actions = [
-            "Continue regular outdoor activities",
-            "Maintain current pollution control measures"
-        ];
-    } else if (riskLevel === "Moderate" || aqi <= 100) {
-        recommendations.general = [
-            "Air quality is acceptable",
-            "Unusually sensitive people should consider reducing prolonged outdoor exertion"
-        ];
-        recommendations.sensitive_groups = [
-            "Children, elderly, and people with respiratory conditions",
-            "Consider reducing strenuous outdoor activities"
-        ];
-        recommendations.actions = [
-            "Reduce vehicle idling",
-            "Limit outdoor burning",
-            "Use public transportation when possible"
-        ];
-    } else {
-        recommendations.general = [
-            "Air quality is unhealthy",
-            "Everyone may begin to experience health effects"
-        ];
-        recommendations.sensitive_groups = [
-            "Avoid all outdoor activities",
-            "Stay indoors with air purifiers if possible"
-        ];
-        recommendations.actions = [
-            "Issue public health advisory",
-            "Implement traffic reduction measures",
-            "Activate emergency pollution control protocols"
-        ];
-    }
-    
-    return recommendations;
-}
-
-function updateRecommendationList(elementId, items) {
-    const listElement = document.getElementById(elementId);
-    if (!listElement) return;
-    
-    listElement.innerHTML = '';
-    
-    items.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item;
-        li.style.marginBottom = '5px';
-        li.style.paddingLeft = '5px';
-        listElement.appendChild(li);
+    // Update each recommendation list
+    ['generalRecs', 'sensitiveRecs', 'actionRecs'].forEach((listId, index) => {
+        const listElement = document.getElementById(listId);
+        if (!listElement) return;
+        
+        listElement.innerHTML = '';
+        const items = index === 0 ? recommendations.general : 
+                     index === 1 ? recommendations.sensitive_groups : 
+                     recommendations.actions;
+        
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            listElement.appendChild(li);
+        });
     });
 }
 
 // ============================================
-// CHARTS
-// ============================================
-function updateCharts(data, locationName) {
-    // Update risk history chart
-    updateRiskHistoryChart(locationName);
-    
-    // Update parameter comparison chart
-    updateParameterChart(data);
-}
-
-function updateRiskHistoryChart(locationName) {
-    const ctx = document.getElementById('riskHistoryChart').getContext('2d');
-    
-    if (riskHistoryChart) {
-        riskHistoryChart.destroy();
-    }
-    
-    // Sample historical data
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-    const riskScores = [65, 70, 68, 72, 75, 78, 80, 77]; // Risk scores (0-100)
-    
-    riskHistoryChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: months,
-            datasets: [{
-                label: `Risk Score - ${locationName}`,
-                data: riskScores,
-                borderColor: '#3498db',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Historical Risk Trends',
-                    font: { size: 14 }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    title: {
-                        display: true,
-                        text: 'Risk Score'
-                    }
-                }
-            }
-        }
-    });
-}
-
-function updateParameterChart(data) {
-    const ctx = document.getElementById('parameterChart').getContext('2d');
-    
-    if (parameterChart) {
-        parameterChart.destroy();
-    }
-    
-    const parameters = ['PM2.5', 'PM10', 'NO₂', 'SO₂', 'CO', 'O₃'];
-    const currentValues = [data.pm25, data.pm10, data.no2, data.so2, data.co, data.o3];
-    const safetyThresholds = [12, 50, 30, 10, 1.5, 40]; // Standard thresholds
-    
-    parameterChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: parameters,
-            datasets: [
-                {
-                    label: 'Current Value',
-                    data: currentValues,
-                    backgroundColor: '#3498db',
-                    borderColor: '#2980b9',
-                    borderWidth: 1
-                },
-                {
-                    label: 'Safety Threshold',
-                    data: safetyThresholds,
-                    type: 'line',
-                    borderColor: '#e74c3c',
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Parameter Comparison'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-function refreshData() {
-    const locationId = locationSelect.value;
-    if (!locationId) {
-        showAlert('⚠️ Please select a location first', 'error');
-        return;
-    }
-    
-    loadLocationData();
-    showAlert('🔄 Refreshing data...', 'success');
-}
-
-function showAlert(message, type) {
-    const alert = document.getElementById('apiAlert');
-    if (!alert) return;
-    
-    alert.innerHTML = message;
-    alert.className = `alert alert-${type}`;
-    alert.style.display = 'block';
-    
-    let icon = '';
-    if (type === 'success') icon = '<i class="fas fa-check-circle"></i> ';
-    else if (type === 'error') icon = '<i class="fas fa-exclamation-circle"></i> ';
-    
-    alert.innerHTML = icon + message;
-    
-    if (type === 'success') {
-        setTimeout(() => {
-            alert.style.display = 'none';
-        }, 5000);
-    }
-}
-
-// ============================================
-// INITIALIZATION
+// INITIALIZE PAGE (UPDATED)
 // ============================================
 function initializePage() {
     // Set model accuracy
     if (modelAccuracyElement) {
         modelAccuracyElement.textContent = '85.0%';
-        modelAccuracyElement.style.color = '#f9d423'; // Yellow for 85%
+        modelAccuracyElement.style.color = '#f9d423';
     }
     
     // Set up location select event
@@ -604,14 +426,12 @@ function initializePage() {
     // Load initial dashboard data
     loadDashboardData();
     
-    showAlert('✅ Air Pollution Risk Assessment System Ready', 'success');
+    // Make sure results are hidden initially
+    resultsContainer.style.display = 'none';
+    noResultsMessage.style.display = 'block';
+    
+    showAlert('✅ Air Pollution Risk Assessment System Ready. Select a city to begin.', 'success');
 }
-
-function loadDashboardData() {
-    // You can load actual dashboard data here if available
-    console.log('Dashboard data loaded');
-}
-
 // ============================================
 // EVENT LISTENERS
 // ============================================
@@ -621,3 +441,4 @@ document.addEventListener('DOMContentLoaded', initializePage);
 window.loadLocationData = loadLocationData;
 window.generatePrediction = generatePrediction;
 window.refreshData = refreshData;
+
