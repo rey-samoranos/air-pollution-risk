@@ -568,4 +568,56 @@ function refreshData() {
 }
 
 function showAlert(message, type) {
-    const alert = document
+    const alert = document.getElementById('apiAlert');
+    if (!alert) return;
+    
+    alert.innerHTML = message;
+    alert.className = `alert alert-${type}`;
+    alert.style.display = 'block';
+    
+    let icon = '';
+    if (type === 'success') icon = '<i class="fas fa-check-circle"></i> ';
+    else if (type === 'error') icon = '<i class="fas fa-exclamation-circle"></i> ';
+    
+    alert.innerHTML = icon + message;
+    
+    if (type === 'success') {
+        setTimeout(() => {
+            alert.style.display = 'none';
+        }, 5000);
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+function initializePage() {
+    // Set model accuracy
+    if (modelAccuracyElement) {
+        modelAccuracyElement.textContent = '85.0%';
+        modelAccuracyElement.style.color = '#f9d423'; // Yellow for 85%
+    }
+    
+    // Set up location select event
+    locationSelect.addEventListener('change', loadLocationData);
+    
+    // Load initial dashboard data
+    loadDashboardData();
+    
+    showAlert('✅ Air Pollution Risk Assessment System Ready', 'success');
+}
+
+function loadDashboardData() {
+    // You can load actual dashboard data here if available
+    console.log('Dashboard data loaded');
+}
+
+// ============================================
+// EVENT LISTENERS
+// ============================================
+document.addEventListener('DOMContentLoaded', initializePage);
+
+// Expose functions to global scope
+window.loadLocationData = loadLocationData;
+window.generatePrediction = generatePrediction;
+window.refreshData = refreshData;
