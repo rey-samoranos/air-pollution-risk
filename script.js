@@ -209,18 +209,289 @@ function displayPredictionResults(location) {
     setTimeout(() => riskDisplay.style.animation = 'fadeIn 0.5s ease-in', 10);
 }
 
-// Keep ALL your other functions exactly the same:
-// calculateAQI, getAQICategory, getRecommendations, updateParameterChartWithLocation, etc.
-// (They were already perfect)
-
-/// DON'T FORGET TO UPDATE THESE TWO LINES IN loadLocationData():
-// Inside the setTimeout after loading data:
-// generatePredictionForLocation(location); // ← This now triggers real prediction
-
-// And keep everything else the same until the end (initializePage, etc.)
-
-// FINAL STEP: In initializePage(), update accuracy:
+// ============================================
+// MAIN PREDICTION FUNCTION
+// ============================================
+function generatePredictionForLocation(location) {
+// Show loading briefly
+dataLoading.style.display = 'block';
+// Simulate prediction delay
+setTimeout(() => {
+dataLoading.style.display = 'none';
+// Display the prediction
+displayPredictionResults(location);
+// Update charts with location data
+updateParameterChartWithLocation(location.data, location.name);
+showAlert(✅ Prediction generated for ${location.name}, 'success');
+}, 300);
+}
+function generatePrediction() {
+const locationId = locationSelect.value;
+if (!locationId) {
+showAlert('⚠️ Please select a location first', 'error');
+return;
+}
+const location = locationData[locationId];
+generatePredictionForLocation(location);
+}
+function displayPredictionResults(location) {
+// Hide "no results" message and show results
+noResultsMessage.style.display = 'none';
+resultsContainer.style.display = 'block';
+// Update location and time
+document.getElementById('predictionLocation').textContent = location.name;
+document.getElementById('predictionTime').textContent = new Date().toLocaleString();
+// Get the predicted risk from the location data
+const predictedRisk = location.predicted || 'Moderate';
+const actualRisk = location.actual || 'Moderate';
+const probabilities = location.probabilities || { High: 0.0, Low: 0.0, Moderate: 1.0 };
+// Calculate confidence (max probability)
+const confidence = Math.max(probabilities.High, probabilities.Low, probabilities.Moderate) * 100;
+// Calculate AQI from PM2.5
+const aqi = calculateAQI(location.data.pm25);
+const aqiCategory = getAQICategory(aqi);
+// Update risk display
+const riskDisplay = document.getElementById('riskDisplay');
+const riskText = document.getElementById('riskLevelText');
+const riskTitle = document.getElementById('riskTitle');
+riskText.textContent = ${predictedRisk} Risk;
+document.getElementById('confidenceValue').textContent = ${confidence.toFixed(1)}%;
+document.getElementById('aqiValue').textContent = aqi.toFixed(1);
+document.getElementById('aqiCategory').textContent = aqiCategory;
+// Style based on risk level
+riskDisplay.className = 'risk-level-display';
+if (predictedRisk === 'Low') {
+riskDisplay.classList.add('risk-low');
+riskTitle.innerHTML = ' Low Risk';
+} else if (predictedRisk === 'Moderate') {
+riskDisplay.classList.add('risk-moderate');
+riskTitle.innerHTML = ' Moderate Risk';
+} else {
+riskDisplay.classList.add('risk-high');
+riskTitle.innerHTML = ' High Risk';
+}
+// Update probabilities
+document.getElementById('probLow').textContent = ${(probabilities.Low * 100).toFixed(1)}%;
+document.getElementById('probModerate').textContent = ${(probabilities.Moderate * 100).toFixed(1)}%;
+document.getElementById('probHigh').textContent = ${(probabilities.High * 100).toFixed(1)}%;
+// Add dataset comparison if we have actual risk
+const comparisonDiv = document.querySelector('.dataset-comparison');
+if (comparisonDiv) {
+comparisonDiv.remove();
+}
+if (actualRisk) {
+const comparison = document.createElement('div');
+comparison.className = 'dataset-comparison';
+comparison.innerHTML = `
+            
+            Dataset validation: Actual was ${actualRisk},
+            Predicted was ${predictedRisk}
+            ${actualRisk === predictedRisk ? '✅' : '❌'}
+        `;
+        riskDisplay.appendChild(comparison);
+    }
+// Update recommendations
+const recommendations = getRecommendations(predictedRisk, aqi);
+updateRecommendationList('generalRecs', recommendations.general);
+updateRecommendationList('sensitiveRecs', recommendations.sensitive_groups);
+updateRecommendationList('actionRecs', recommendations.actions);
+// Add animation to results
+riskDisplay.style.animation = 'none';
+setTimeout(() => {
+riskDisplay.style.animation = 'fadeIn 0.5s ease-in';
+}, 10);
+}
+function updateRecommendationList(elementId, items) {
+const listElement = document.getElementById(elementId);
+if (!listElement) return;
+listElement.innerHTML = '';
+items.forEach(item => {
+const li = document.createElement('li');
+li.textContent = item;
+li.style.marginBottom = '5px';
+li.style.paddingLeft = '5px';
+listElement.appendChild(li);
+});
+}
+function updateParameterChartWithLocation(data, locationName) {
+const ctx = document.getElementById('parameterChart')?.getContext('2d');
+if (!ctx) return;
+if (parameterChart) {
+parameterChart.destroy();
+}
+const parameters = ['PM2.5', 'PM10', 'NO₂', 'SO₂', 'CO', 'O₃'];
+const currentValues = [data.pm25, data.pm10, data.no2, data.so2, data.co, data.o3];
+const safetyThresholds = [12, 50, 30, 10, 1.5, 40];
+parameterChart = new Chart(ctx, {
+type: 'bar',
+data: {
+labels: parameters,
+datasets: [
+{
+label: ${locationName} Values,
+data: currentValues,
+backgroundColor: '#3498db',
+borderColor: '#2980b9',
+borderWidth: 1
+},
+{
+label: 'Safety Threshold',
+data: safetyThresholds,
+type: 'line',
+borderColor: '#e74c3c',
+borderWidth: 2,
+fill: false,
+pointRadius: 4
+}
+]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+title: {
+display: true,
+text: Parameter Comparison - ${locationName}
+}
+},
+scales: {
+y: {
+beginAtZero: true,
+title: {
+display: true,
+text: 'Value'
+}
+}
+}
+}
+});
+}
+// ============================================
+// FORM HANDLING FUNCTIONS
+// ============================================
+function resetForm() {
+// Reset location select
+locationSelect.value = '';
+// Hide data and results
+airQualityData.style.display = 'none';
+resultsContainer.style.display = 'none';
+noDataMessage.style.display = 'block';
+noResultsMessage.style.display = 'block';
+// Reset charts to default
+updateCharts({
+risk_distribution: {Low: 48.8, Moderate: 49.5, High: 1.6},
+summary: {model_accuracy: 85.0}
+});
+showAlert('✅ Form reset to default values', 'success');
+}
+// ============================================
+// ALERT FUNCTIONS
+// ============================================
+function showAlert(message, type) {
+if (!apiAlert) return;
+apiAlert.innerHTML = message;
+apiAlert.className = alert alert-${type};
+apiAlert.style.display = 'block';
+// Add icon based on type
+let icon = '';
+if (type === 'success') icon = ' ';
+else if (type === 'error') icon = ' ';
+apiAlert.innerHTML = icon + message;
+// Auto-hide success alerts after 5 seconds
+if (type === 'success') {
+setTimeout(hideAlert, 5000);
+}
+}
+function hideAlert() {
+if (apiAlert) {
+apiAlert.style.display = 'none';
+}
+}
+// ============================================
+// INITIALIZATION ON PAGE LOAD
+// ============================================
+function initializePage() {
+console.log('🚀 Initializing Air Pollution Risk Assessment System...');
+// Set initial model accuracy
+updateModelAccuracy(STATIC_ACCURACY);
+// Set API status for static mode
+if (apiStatusElement) {
+apiStatusElement.innerHTML =
+'● Static Mode (No API Required)';
+}
+// Load dashboard data
+loadDashboardData();
+// Set up location select event
+locationSelect.addEventListener('change', loadLocationData);
+// Show welcome message
+setTimeout(() => {
+showAlert(
+'🌐 Welcome to Metro Manila Air Pollution Risk Assessment
+' +
+'Select a city to view air quality data and predictions',
+'success'
+);
+}, 1000);
+console.log('✅ Page initialization complete');
+}
+// ============================================
+// ADD CSS ANIMATIONS DYNAMICALLY
+// ============================================
+function addAnimations() {
+const style = document.createElement('style');
+style.textContent = `
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(-10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+0% { transform: scale(1); }
+50% { transform: scale(1.05); }
+100% { transform: scale(1); }
+}
+.risk-level-display {
+animation: fadeIn 0.5s ease-in;
+}
+.probability-item:hover {
+animation: pulse 0.5s ease;
+}
+.card {
+animation: fadeIn 0.8s ease-out;
+}
+`;
+document.head.appendChild(style);
+}
+// ============================================
+// EVENT LISTENERS AND GLOBAL EXPORTS
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+// Add CSS animations
+addAnimations();
+// Initialize the page
+initializePage();
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+// Ctrl+Enter to predict
+if (e.ctrlKey && e.key === 'Enter') {
+e.preventDefault();
+generatePrediction();
+}
+// Escape to reset
+if (e.key === 'Escape') {
+resetForm();
+}
+});
+});
+// Expose functions to global scope for button onclick events
+window.loadLocationData = loadLocationData;
+window.generatePrediction = generatePrediction;
+window.resetForm = resetForm;
+// For debugging
+console.log('📊 Air Pollution Risk Assessment System Loaded');
+console.log('Mode:', IS_STATIC_MODE ? 'Static (GitHub Pages)' : 'API Mode');
+console.log('Model Accuracy:', STATIC_ACCURACY + '%');
 updateModelAccuracy(STATIC_ACCURACY); // Now shows 92.7%
 
 // That's it.
+
 
